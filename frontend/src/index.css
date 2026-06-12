@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-900: #0F172A;
+  --color-navy-800: #1E293B;
+  --color-phish-safe: #22C55E;
+  --color-phish-suspicious: #F97316;
+  --color-phish-dangerous: #EF4444;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 font-sans;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+}
+
+/* Animations minimalistes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}

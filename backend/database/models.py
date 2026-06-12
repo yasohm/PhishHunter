@@ -1,9 +1,5 @@
-"""
-Modèles ORM — Définition des tables de la base de données.
-"""
-
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -27,17 +23,22 @@ class Scan(Base):
     confidence = Column(Float, nullable=False, default=0.0)
     risk_level = Column(String(20), nullable=False, default="safe")
     features_json = Column(Text, nullable=False, default="{}")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> dict:
         """Convertit l'objet en dictionnaire pour la sérialisation JSON."""
+        try:
+            features = json.loads(self.features_json) if self.features_json else {}
+        except Exception:
+            features = {}
+            
         return {
             "id": self.id,
             "url": self.url,
             "is_phishing": self.is_phishing,
             "confidence": self.confidence,
             "risk_level": self.risk_level,
-            "features": json.loads(self.features_json) if self.features_json else {},
+            "features": features,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

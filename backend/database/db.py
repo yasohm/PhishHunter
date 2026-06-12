@@ -16,9 +16,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # URL de la base de données depuis l'environnement
+# Par défaut, on utilise 'postgres' qui est le nom du service dans docker-compose
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://admin:admin123@localhost:5432/phishguard"
+    "postgresql+asyncpg://admin:admin123@postgres:5432/phishguard"
 )
 
 

@@ -37,19 +37,19 @@ const Home = () => {
     };
 
     const isFeatureSuspicious = (name, value) => {
-        // Liste simple des caractéristiques considérées comme suspectes si vraies/positives
         if (name === 'has_https' && value === 0) return true;
         if (name === 'has_ip_address' && value === 1) return true;
         if (name === 'has_suspicious_keywords' && value === 1) return true;
         if (name === 'has_favicon_mismatch' && value === 1) return true;
         if (name === 'has_password_input' && value === 1) return true;
-        if (name === 'page_title_mismatch' && value === 1) return true;
+        if (name === 'page_title_suspicious' && value === 1) return true;
+        if (name === 'is_shortened' && value === 1) return true;
         if (name === 'subdomain_count' && value > 2) return true;
         if (name === 'special_char_count' && value > 2) return true;
-        if (name === 'domain_age_days' && value < 180) return true;
+        if (name === 'domain_age_days' && value !== -1 && value < 90) return true;
         if (name === 'redirect_count' && value > 1) return true;
-        if (name === 'html_form_count' && value > 2) return true;
-        if (name === 'external_links_ratio' && value > 0.5) return true;
+        if (name === 'url_entropy' && value > 4.5) return true;
+        if (name === 'digit_count' && value > 10) return true;
         return false;
     };
 
@@ -110,7 +110,7 @@ const Home = () => {
                         <RiskGauge confidence={result.confidence} riskLevel={result.risk_level} />
 
                         <div className="grid grid-cols-2 gap-3">
-                            {Object.entries(result.features).slice(0, 8).map(([key, value]) => (
+                            {Object.entries(result.features).slice(0, 14).map(([key, value]) => (
                                 <FeatureCard
                                     key={key}
                                     name={key}

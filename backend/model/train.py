@@ -21,7 +21,7 @@ import joblib
 # Chemin du modèle sauvegardé
 CHEMIN_MODELE = os.path.join(os.path.dirname(__file__), "phishing_model.pkl")
 
-# Noms des 13 caractéristiques
+# Noms des caractéristiques enrichies
 NOMS_CARACTERISTIQUES = [
     "url_length",
     "has_https",
@@ -29,20 +29,23 @@ NOMS_CARACTERISTIQUES = [
     "subdomain_count",
     "special_char_count",
     "domain_age_days",
+    "whois_success",
     "has_suspicious_keywords",
     "redirect_count",
     "has_favicon_mismatch",
     "html_form_count",
     "external_links_ratio",
     "has_password_input",
-    "page_title_mismatch",
+    "page_title_suspicious",
+    "url_entropy",
+    "is_shortened",
+    "digit_count",
 ]
 
 
 def generer_donnees_synthetiques(nb_echantillons: int = 5000) -> pd.DataFrame:
     """
-    Génère un jeu de données synthétique réaliste pour l'entraînement.
-    Les sites de phishing ont des caractéristiques distinctes des sites légitimes.
+    Génère un jeu de données synthétique plus intelligent et nuancé.
     """
     np.random.seed(42)
     nb_phishing = nb_echantillons // 2
@@ -52,40 +55,58 @@ def generer_donnees_synthetiques(nb_echantillons: int = 5000) -> pd.DataFrame:
 
     # --- Générer des échantillons LÉGITIMES ---
     for _ in range(nb_legitime):
+        url_len = np.random.randint(15, 60)
+        # 10% de chance d'échec WHOIS même sur du légitime
+        whois_suc = np.random.choice([0, 1], p=[0.1, 0.9])
+        dom_age = np.random.randint(365, 7300) if whois_suc else -1
+        
         echantillon = {
-            "url_length": np.random.randint(15, 60),
-            "has_https": np.random.choice([0, 1], p=[0.1, 0.9]),
-            "has_ip_address": np.random.choice([0, 1], p=[0.98, 0.02]),
-            "subdomain_count": np.random.choice([0, 1, 2], p=[0.5, 0.4, 0.1]),
-            "special_char_count": np.random.choice([0, 1], p=[0.85, 0.15]),
-            "domain_age_days": np.random.randint(365, 7300),
-            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.9, 0.1]),
-            "redirect_count": np.random.choice([0, 1, 2], p=[0.7, 0.2, 0.1]),
-            "has_favicon_mismatch": np.random.choice([0, 1], p=[0.95, 0.05]),
-            "html_form_count": np.random.choice([0, 1, 2], p=[0.4, 0.5, 0.1]),
-            "external_links_ratio": round(np.random.uniform(0.0, 0.3), 4),
-            "has_password_input": np.random.choice([0, 1], p=[0.7, 0.3]),
-            "page_title_mismatch": np.random.choice([0, 1], p=[0.95, 0.05]),
+            "url_length": url_len,
+            "has_https": np.random.choice([0, 1], p=[0.05, 0.95]),
+            "has_ip_address": 0,
+            "subdomain_count": np.random.choice([0, 1, 2], p=[0.6, 0.3, 0.1]),
+            "special_char_count": np.random.choice([0, 1, 2], p=[0.8, 0.15, 0.05]),
+            "domain_age_days": dom_age,
+            "whois_success": whois_suc,
+            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.95, 0.05]),
+            "redirect_count": np.random.choice([0, 1], p=[0.9, 0.1]),
+            "has_favicon_mismatch": 0,
+            "html_form_count": np.random.choice([0, 1, 2], p=[0.5, 0.4, 0.1]),
+            "external_links_ratio": round(np.random.uniform(0.0, 0.2), 4),
+            "has_password_input": np.random.choice([0, 1], p=[0.8, 0.2]),
+            "page_title_suspicious": 0,
+            "url_entropy": round(np.random.uniform(3.0, 4.2), 4),
+            "is_shortened": 0,
+            "digit_count": np.random.randint(0, 5),
             "is_phishing": 0,
         }
         donnees.append(echantillon)
 
     # --- Générer des échantillons de PHISHING ---
     for _ in range(nb_phishing):
+        url_len = np.random.randint(40, 180)
+        whois_suc = np.random.choice([0, 1], p=[0.3, 0.7])
+        # Un site de phishing a soit un âge court, soit WHOIS échoue
+        dom_age = np.random.randint(0, 90) if whois_suc else -1
+
         echantillon = {
-            "url_length": np.random.randint(40, 200),
-            "has_https": np.random.choice([0, 1], p=[0.6, 0.4]),
-            "has_ip_address": np.random.choice([0, 1], p=[0.6, 0.4]),
-            "subdomain_count": np.random.choice([0, 1, 2, 3, 4], p=[0.1, 0.2, 0.3, 0.25, 0.15]),
-            "special_char_count": np.random.randint(1, 6),
-            "domain_age_days": np.random.randint(0, 180),
-            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.2, 0.8]),
-            "redirect_count": np.random.choice([0, 1, 2, 3, 4], p=[0.1, 0.2, 0.3, 0.2, 0.2]),
+            "url_length": url_len,
+            "has_https": np.random.choice([0, 1], p=[0.4, 0.6]),
+            "has_ip_address": np.random.choice([0, 1], p=[0.7, 0.3]),
+            "subdomain_count": np.random.randint(1, 4),
+            "special_char_count": np.random.randint(1, 5),
+            "domain_age_days": dom_age,
+            "whois_success": whois_suc,
+            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.1, 0.9]),
+            "redirect_count": np.random.randint(1, 4),
             "has_favicon_mismatch": np.random.choice([0, 1], p=[0.4, 0.6]),
-            "html_form_count": np.random.choice([0, 1, 2, 3], p=[0.1, 0.3, 0.4, 0.2]),
-            "external_links_ratio": round(np.random.uniform(0.3, 1.0), 4),
+            "html_form_count": np.random.randint(1, 4),
+            "external_links_ratio": round(np.random.uniform(0.4, 0.9), 4),
             "has_password_input": np.random.choice([0, 1], p=[0.2, 0.8]),
-            "page_title_mismatch": np.random.choice([0, 1], p=[0.3, 0.7]),
+            "page_title_suspicious": np.random.choice([0, 1], p=[0.3, 0.7]),
+            "url_entropy": round(np.random.uniform(4.0, 5.5), 4),
+            "is_shortened": np.random.choice([0, 1], p=[0.7, 0.3]),
+            "digit_count": np.random.randint(5, 20),
             "is_phishing": 1,
         }
         donnees.append(echantillon)
@@ -98,73 +119,56 @@ def generer_donnees_synthetiques(nb_echantillons: int = 5000) -> pd.DataFrame:
 
 def entrainer_modele():
     """
-    Entraîne le modèle Random Forest et sauvegarde le résultat.
+    Orchestre la génération de données, l'entraînement et la sauvegarde.
     """
     print("=" * 60)
-    print("🛡️  PhishGuard — Entraînement du modèle de détection")
+    print("PhishGuard - Entrainement du modele de detection")
     print("=" * 60)
 
-    # Générer les données synthétiques
-    print("\n📊 Génération du jeu de données synthétique (5000 échantillons)...")
+    print("\nGeneration du jeu de données synthetique (5000 echantillons)...")
     df = generer_donnees_synthetiques(5000)
-    print(f"   ✅ {len(df)} échantillons générés")
-    print(f"   - Sites légitimes : {len(df[df['is_phishing'] == 0])}")
-    print(f"   - Sites de phishing : {len(df[df['is_phishing'] == 1])}")
+    print(f"    5000 echantillons generes")
+    print(f"    - Sites legitimes : {len(df[df['is_phishing'] == 0])}")
+    print(f"    - Sites de phishing : {len(df[df['is_phishing'] == 1])}")
 
-    # Séparer les caractéristiques et les étiquettes
     X = df[NOMS_CARACTERISTIQUES]
     y = df["is_phishing"]
 
-    # Division en jeux d'entraînement et de test
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X, y, test_size=0.2, random_state=42
     )
-    print(f"\n📦 Division des données :")
-    print(f"   - Entraînement : {len(X_train)} échantillons")
-    print(f"   - Test : {len(X_test)} échantillons")
 
-    # Entraîner le classifieur Random Forest
-    print("\n🔧 Entraînement du modèle Random Forest...")
+    print("\nDivision des donnees :")
+    print(f"    - Entrainement : {len(X_train)} echantillons")
+    print(f"    - Test : {len(X_test)} echantillons")
+
+    print("\nEntrainement du modele Random Forest...")
     modele = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=15,
-        min_samples_split=5,
-        min_samples_leaf=2,
-        random_state=42,
-        n_jobs=-1,
+        n_estimators=200, max_depth=15, n_jobs=-1, random_state=42
     )
     modele.fit(X_train, y_train)
-    print("   ✅ Entraînement terminé")
+    print("    Entrainement termine")
 
-    # Évaluation du modèle
     y_pred = modele.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
 
-    print("\n📈 Métriques de performance :")
-    print(f"   - Exactitude (Accuracy)  : {accuracy:.4f}")
-    print(f"   - Précision (Precision)  : {precision:.4f}")
-    print(f"   - Rappel (Recall)        : {recall:.4f}")
-    print(f"   - Score F1               : {f1:.4f}")
+    print("\nMetriques de performance :")
+    print(f"    - Exactitude (Accuracy)  : {accuracy:.4f}")
+    print(f"    - Precision (Precision)  : {precision_score(y_test, y_pred):.4f}")
+    print(f"    - Rappel (Recall)        : {recall_score(y_test, y_pred):.4f}")
+    print(f"    - Score F1               : {f1_score(y_test, y_pred):.4f}")
 
-    print(f"\n📋 Rapport de classification détaillé :")
-    print(classification_report(
-        y_test, y_pred,
-        target_names=["Légitime", "Phishing"]
-    ))
+    print("\nRapport de classification detaille :")
+    print(classification_report(y_test, y_pred, target_names=["Legitime", "Phishing"]))
 
-    # Importance des caractéristiques
-    importances = modele.feature_importances_
-    indices = np.argsort(importances)[::-1]
-    print("🔍 Importance des caractéristiques :")
-    for i, idx in enumerate(indices):
-        print(f"   {i + 1}. {NOMS_CARACTERISTIQUES[idx]}: {importances[idx]:.4f}")
+    print("\nImportance des caracteristiques :")
+    importances = pd.Series(modele.feature_importances_, index=NOMS_CARACTERISTIQUES)
+    for i, (nom, val) in enumerate(importances.sort_values(ascending=False).items()):
+        print(f"    {i+1}. {nom}: {val:.4f}")
 
     # Sauvegarder le modèle
     joblib.dump(modele, CHEMIN_MODELE)
-    print(f"\n💾 Modèle sauvegardé : {CHEMIN_MODELE}")
+    print(f"\nModele sauvegarde : {CHEMIN_MODELE}")
     print("=" * 60)
 
     return modele
@@ -173,7 +177,7 @@ def entrainer_modele():
 def charger_modele():
     """Charge le modèle sauvegardé depuis le fichier pkl."""
     if not os.path.exists(CHEMIN_MODELE):
-        print("⚠️  Modèle non trouvé. Entraînement en cours...")
+        print("Modèle non trouvé. Entraînement en cours...")
         return entrainer_modele()
     return joblib.load(CHEMIN_MODELE)
 

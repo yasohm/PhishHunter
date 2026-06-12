@@ -25,19 +25,19 @@ warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 async def lifespan(app: FastAPI):
     """Gestion du cycle de vie de l'application."""
     # Démarrage : créer les tables si elles n'existent pas
-    print("🛡️  PhishGuard — Démarrage du serveur...")
+    print("PhishGuard - Demarrage du serveur...")
     try:
         await creer_tables()
-        print("✅ Tables de base de données créées/vérifiées")
+        print("Tables de base de données créées/vérifiées")
     except Exception as e:
-        print(f"⚠️  Erreur lors de la création des tables : {e}")
-        print("   Le serveur continuera sans base de données.")
+        print(f"Erreur lors de la création des tables : {e}")
+        print("Le serveur continuera sans base de données.")
 
     yield
 
     # Arrêt : fermer la connexion à la base de données
     await fermer_connexion()
-    print("🛑 PhishGuard — Serveur arrêté")
+    print("PhishGuard - Serveur arrete")
 
 
 # Créer l'application FastAPI

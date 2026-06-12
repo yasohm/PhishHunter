@@ -19,6 +19,13 @@ RACCOURCISSEURS = [
     "buff.ly", "goo.gl", "bit.do", "ow.ly"
 ]
 
+# Plateformes de création de sites web fréquemment détournées pour le phishing
+PLATEFORMES_HEBERGEMENT = [
+    "wixsite.com", "wixstudio.com", "sites.google.com", "weebly.com",
+    "blogspot.com", "000webhostapp.com", "firebaseapp.com", "github.io",
+    "web.app", "vercel.app", "netlify.app", "pages.dev"
+]
+
 # Timeout pour les requêtes HTTP (en secondes)
 TIMEOUT_REQUETE = 5
 
@@ -81,7 +88,7 @@ def _age_domaine(domaine: str) -> tuple:
 
 def extraire_caracteristiques(url: str) -> dict:
     """
-    Extrait les caractéristiques enrichies d'une URL.
+    Extrait les caractéristiques d'une URL et les mappe au format UCI (-1, 0, 1).
     """
     if not url.startswith(("http://", "https://")):
         url = "http://" + url
@@ -94,83 +101,223 @@ def extraire_caracteristiques(url: str) -> dict:
     html_contenu, reponse = _recuperer_html(url)
     soup = BeautifulSoup(html_contenu, "html.parser") if html_contenu else None
 
-    # Nouvelles caractéristiques (Intelligence++)
-    url_entropy = _calculer_entropie(url)
-    is_shortened = 1 if any(r in domaine for r in RACCOURCISSEURS) else 0
-    digit_count = sum(c.isdigit() for c in url)
+    # --- 1. having_IP_Address ---
+    having_IP_Address = -1 if _est_adresse_ip(domaine) else 1
 
-    # WHOIS avec gestion robuste des échecs
-    domain_age_days, whois_success = _age_domaine(domaine)
+    # --- 2. URL_Length ---
+    if len(url) < 54:
+        URL_Length = 1
+    elif 54 <= len(url) <= 75:
+        URL_Length = 0
+    else:
+        URL_Length = -1
 
-    # 1. Longueur de l'URL
-    url_length = len(url)
+    # --- 3. Shortining_Service ---
+    Shortining_Service = -1 if any(r in domaine for r in RACCOURCISSEURS) else 1
 
-    # 2. Utilisation de HTTPS
-    has_https = 1 if url_analyse.scheme == "https" else 0
+    # --- 4. having_At_Symbol ---
+    having_At_Symbol = -1 if "@" in url else 1
 
-    # 3. Présence d'une adresse IP
-    has_ip_address = 1 if _est_adresse_ip(domaine) else 0
+    # --- 5. double_slash_redirecting ---
+    # On cherche // après le protocole (index 7 pour http://, 8 pour https://)
+    double_slash_redirecting = -1 if url.rfind("//") > 7 else 1
 
-    # 4. Nombre de sous-domaines
-    parties_domaine = domaine.split(".")
-    subdomain_count = max(len(parties_domaine) - 2, 0)
+    # --- 6. Prefix_Suffix ---
+    Prefix_Suffix = -1 if "-" in domaine else 1
 
-    # 5. Nombre de caractères spéciaux
-    special_char_count = sum(url.count(c) for c in ["@", "%", "//", "--"])
-    if "//" in url: special_char_count -= 1
+    # --- 7. having_Sub_Domain ---
+    parties = domaine.split(".")
+    # Détection de mots-clés suspects dans le sous-domaine
+    # Exemple: paypal.secure-login.wixstudio.com
+    sous_domaine = ".".join(parties[:-2]) if len(parties) > 2 else ""
+    contient_mots_suspects = any(mot in sous_domaine.lower() for mot in MOTS_SUSPECTS)
 
-    # 6. Mots-clés suspects
-    has_suspicious_keywords = 1 if any(mot in url_lower for mot in MOTS_SUSPECTS) else 0
+    # UCI: Dots < 3 -> 1, Dots = 3 -> 0, Dots > 3 -> -1
+    dots = len(parties) - 1
+    if contient_mots_suspects or dots > 3:
+        having_Sub_Domain = -1
+    elif dots == 3:
+        having_Sub_Domain = 0
+    else:
+        having_Sub_Domain = 1
 
-    # 7. Nombre de redirections
-    redirect_count = len(reponse.history) if reponse else 0
+    # --- 8. SSLfinal_State ---
+    if url_analyse.scheme == "https":
+        SSLfinal_State = 1 # On simplifie, idéalement vérifier le certificat
+    else:
+        SSLfinal_State = -1
 
-    # 8. Favicon mismatch
-    has_favicon_mismatch = 0
+    # --- 9. Domain_registeration_length ---
+    # --- 24. age_of_domain ---
+    domain_age, whois_success = _age_domaine(domaine)
+    if whois_success:
+        age_of_domain = 1 if domain_age >= 180 else -1
+        Domain_registeration_length = 1 if domain_age >= 365 else -1
+    else:
+        age_of_domain = -1
+        Domain_registeration_length = -1
+
+    # --- 10. Favicon ---
+    Favicon = 1
     if soup:
         icones = soup.find_all("link", rel=lambda x: x and "icon" in x)
         for icone in icones:
             href = icone.get("href", "")
             if href.startswith("http") and urlparse(href).netloc != url_analyse.netloc:
-                has_favicon_mismatch = 1
+                Favicon = -1
                 break
 
-    # 9. HTML Form Count
-    html_form_count = len(soup.find_all("form")) if soup else 0
+    # --- 11. port ---
+    # UCI: Port standard (80, 443) -> 1, Non-standard -> -1
+    port_url = url_analyse.port
+    if port_url is None:
+        port = 1
+    elif port_url in [80, 443]:
+        port = 1
+    else:
+        port = -1
 
-    # 10. Liens externes
-    external_links_ratio = 0.0
+    # --- 12. HTTPS_token ---
+    HTTPS_token = -1 if "https" in domaine else 1
+
+    # --- 13. Request_URL ---
+    Request_URL = 1
+    if soup:
+        liens_objets = soup.find_all(['img', 'video', 'audio'], src=True)
+        if liens_objets:
+            nb_ext = sum(1 for l in liens_objets if urlparse(l['src']).netloc != url_analyse.netloc and urlparse(l['src']).netloc != "")
+            ratio = nb_ext / len(liens_objets)
+            Request_URL = 1 if ratio < 0.22 else (-1 if ratio > 0.61 else 0)
+
+    # --- 14. URL_of_Anchor ---
+    URL_of_Anchor = 1
     if soup:
         liens = soup.find_all("a", href=True)
         if liens:
-            nb_ext = sum(1 for l in liens if l["href"].startswith("http") and urlparse(l["href"]).netloc != url_analyse.netloc)
-            external_links_ratio = round(nb_ext / len(liens), 4)
+            nb_ext = sum(1 for l in liens if urlparse(l['href']).netloc != url_analyse.netloc and urlparse(l['href']).netloc != "")
+            ratio = nb_ext / len(liens)
+            URL_of_Anchor = 1 if ratio < 0.31 else (-1 if ratio > 0.67 else 0)
 
-    # 11. Password input
-    has_password_input = 1 if soup and soup.find_all("input", {"type": "password"}) else 0
+    # --- 15. Links_in_tags ---
+    Links_in_tags = 1
+    if soup:
+        tags = soup.find_all(['link', 'script', 'meta'])
+        nb_ext = 0
+        for t in tags:
+            src = t.get('src') or t.get('href')
+            if src and urlparse(src).netloc != url_analyse.netloc and urlparse(src).netloc != "":
+                nb_ext += 1
+        if tags:
+            ratio = nb_ext / len(tags)
+            Links_in_tags = 1 if ratio < 0.17 else (-1 if ratio > 0.81 else 0)
 
-    # 12. Titre suspect
-    page_title_suspicious = 0
-    if soup and soup.title and soup.title.string:
-        titre = soup.title.string.lower()
-        page_title_suspicious = 1 if any(mot in titre for mot in MOTS_SUSPECTS) else 0
+    # --- 16. SFH (Server Form Handler) ---
+    SFH = 1
+    if soup:
+        formulaires = soup.find_all("form", action=True)
+        for f in formulaires:
+            action = f["action"].lower()
+            if action == "" or action == "about:blank":
+                SFH = -1
+                break
+            # Si le domaine d'action du formulaire est différent du domaine actuel
+            if action.startswith("http"):
+                if urlparse(action).netloc != url_analyse.netloc:
+                    SFH = 0 # Suspect
+                    break
+
+    # --- 17. Submitting_to_email ---
+    Submitting_to_email = 1
+    if html_contenu:
+        html_lower_content = html_contenu.lower()
+        if "mailto:" in html_lower_content or "mail()" in html_lower_content:
+            Submitting_to_email = -1
+
+    # --- 18. Abnormal_URL ---
+    Abnormal_URL = 1
+    # 1. Vérification des plateformes d'hébergement gratuites
+    if any(p in domaine for p in PLATEFORMES_HEBERGEMENT):
+        # Si c'est une plateforme gratuite ET qu'il y a un mot suspect ou un tiret
+        if contient_mots_suspects or Prefix_Suffix == -1:
+            Abnormal_URL = -1
+    
+    # 2. Vérification WHOIS vs Domaine
+    if whois_success and Abnormal_URL == 1:
+        try:
+            import whois
+            w = whois.whois(domaine)
+            nom_registre = str(w.get('org', '') or w.get('name', '')).lower()
+            if nom_registre and nom_registre != "none" and not any(p in domaine for p in nom_registre.split()):
+                # Ce check est complexe, on reste prudent
+                pass 
+        except Exception:
+            pass
+
+    # --- 19. Redirect ---
+    Redirect = 0
+    if reponse and len(reponse.history) > 1:
+        Redirect = 1
+
+    # --- 20. on_mouseover ---
+    on_mouseover = 1
+    if html_contenu and "window.status" in html_contenu:
+        on_mouseover = -1
+
+    # --- 21. RightClick ---
+    RightClick = 1
+    if html_contenu and "event.button==2" in html_contenu:
+        RightClick = -1
+
+    # --- 22. popUpWidnow ---
+    popUpWidnow = 1
+    if html_contenu:
+        if "window.open(" in html_contenu or "prompt(" in html_contenu:
+            popUpWidnow = -1
+    
+    # --- 23. Iframe ---
+    Iframe = 1
+    if soup and soup.find_all("iframe"):
+        Iframe = -1
+
+    # --- 25. DNSRecord ---
+    DNSRecord = 1 if whois_success else -1
+
+    # Autres (difficiles à obtenir dynamiquement sans APIs tierces)
+    web_traffic = 0
+    Page_Rank = 0
+    Google_Index = 0
+    Links_pointing_to_page = 0
+    Statistical_report = 0
 
     return {
-        "url_length": url_length,
-        "has_https": has_https,
-        "has_ip_address": has_ip_address,
-        "subdomain_count": subdomain_count,
-        "special_char_count": special_char_count,
-        "domain_age_days": domain_age_days,
-        "whois_success": whois_success,
-        "has_suspicious_keywords": has_suspicious_keywords,
-        "redirect_count": redirect_count,
-        "has_favicon_mismatch": has_favicon_mismatch,
-        "html_form_count": html_form_count,
-        "external_links_ratio": external_links_ratio,
-        "has_password_input": has_password_input,
-        "page_title_suspicious": page_title_suspicious,
-        "url_entropy": url_entropy,
-        "is_shortened": is_shortened,
-        "digit_count": digit_count
+        "having_IP_Address": having_IP_Address,
+        "URL_Length": URL_Length,
+        "Shortining_Service": Shortining_Service,
+        "having_At_Symbol": having_At_Symbol,
+        "double_slash_redirecting": double_slash_redirecting,
+        "Prefix_Suffix": Prefix_Suffix,
+        "having_Sub_Domain": having_Sub_Domain,
+        "SSLfinal_State": SSLfinal_State,
+        "Domain_registeration_length": Domain_registeration_length,
+        "Favicon": Favicon,
+        "port": port,
+        "HTTPS_token": HTTPS_token,
+        "Request_URL": Request_URL,
+        "URL_of_Anchor": URL_of_Anchor,
+        "Links_in_tags": Links_in_tags,
+        "SFH": SFH,
+        "Submitting_to_email": Submitting_to_email,
+        "Abnormal_URL": Abnormal_URL,
+        "Redirect": Redirect,
+        "on_mouseover": on_mouseover,
+        "RightClick": RightClick,
+        "popUpWidnow": popUpWidnow,
+        "Iframe": Iframe,
+        "age_of_domain": age_of_domain,
+        "DNSRecord": DNSRecord,
+        "web_traffic": web_traffic,
+        "Page_Rank": Page_Rank,
+        "Google_Index": Google_Index,
+        "Links_pointing_to_page": Links_pointing_to_page,
+        "Statistical_report": Statistical_report
     }

@@ -31,16 +31,16 @@ def predict(features: dict) -> dict:
         - confidence: float — Score de confiance (0-100)
         - risk_level: str — "safe", "suspicious", ou "dangerous"
     """
+    import pandas as pd
     modele = _obtenir_modele()
 
-    # Préparer le vecteur de caractéristiques dans le bon ordre
-    vecteur = np.array([[
-        features.get(nom, 0) for nom in NOMS_CARACTERISTIQUES
-    ]])
+    # Préparer le vecteur de caractéristiques dans le bon ordre sous forme de DataFrame
+    df_predict = pd.DataFrame([features], columns=NOMS_CARACTERISTIQUES)
+    df_predict = df_predict.fillna(0) # Sécurité (normalement pas besoin car Features extractor est complet)
 
     # Obtenir la prédiction et les probabilités
-    prediction = modele.predict(vecteur)[0]
-    probabilites = modele.predict_proba(vecteur)[0]
+    prediction = modele.predict(df_predict)[0]
+    probabilites = modele.predict_proba(df_predict)[0]
 
     # La confiance est la probabilité de la classe phishing (index 1)
     confiance = round(float(probabilites[1]) * 100, 2)

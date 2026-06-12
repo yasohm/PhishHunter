@@ -16,118 +16,107 @@ from sklearn.metrics import (
     f1_score,
     classification_report,
 )
+from scipy.io import arff
 import joblib
 
 # Chemin du modèle sauvegardé
 CHEMIN_MODELE = os.path.join(os.path.dirname(__file__), "phishing_model.pkl")
+# Chemin du jeu de données ARFF
+CHEMIN_DATASET = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../Training Dataset.arff"))
 
-# Noms des caractéristiques enrichies
+# Noms des caractéristiques du dataset ARFF (UCI Phishing Websites)
 NOMS_CARACTERISTIQUES = [
-    "url_length",
-    "has_https",
-    "has_ip_address",
-    "subdomain_count",
-    "special_char_count",
-    "domain_age_days",
-    "whois_success",
-    "has_suspicious_keywords",
-    "redirect_count",
-    "has_favicon_mismatch",
-    "html_form_count",
-    "external_links_ratio",
-    "has_password_input",
-    "page_title_suspicious",
-    "url_entropy",
-    "is_shortened",
-    "digit_count",
+    "having_IP_Address",
+    "URL_Length",
+    "Shortining_Service",
+    "having_At_Symbol",
+    "double_slash_redirecting",
+    "Prefix_Suffix",
+    "having_Sub_Domain",
+    "SSLfinal_State",
+    "Domain_registeration_length",
+    "Favicon",
+    "port",
+    "HTTPS_token",
+    "Request_URL",
+    "URL_of_Anchor",
+    "Links_in_tags",
+    "SFH",
+    "Submitting_to_email",
+    "Abnormal_URL",
+    "Redirect",
+    "on_mouseover",
+    "RightClick",
+    "popUpWidnow",
+    "Iframe",
+    "age_of_domain",
+    "DNSRecord",
+    "web_traffic",
+    "Page_Rank",
+    "Google_Index",
+    "Links_pointing_to_page",
+    "Statistical_report"
 ]
+
+
+def charger_dataset_arff(chemin: str) -> pd.DataFrame:
+    """
+    Charge le dataset ARFF et le convertit en DataFrame pandas.
+    """
+    if not os.path.exists(chemin):
+        print(f"Dataset non trouvé à {chemin}")
+        return None
+
+    print(f"Chargement du dataset réel : {chemin}")
+    data, meta = arff.loadarff(chemin)
+    df = pd.DataFrame(data)
+
+    # Conversion des types bytes en entiers
+    for col in df.columns:
+        if df[col].dtype == object:
+            df[col] = df[col].apply(lambda x: int(x.decode()) if isinstance(x, bytes) else x)
+
+    # Renommer 'Result' en 'is_phishing'
+    # Dans le dataset UCI, Result = -1 (phishing), 1 (légitime)
+    # On convertit en 0 (légitime) et 1 (phishing)
+    df['is_phishing'] = df['Result'].map({-1: 1, 1: 0, 0: 0}) 
+    
+    return df
 
 
 def generer_donnees_synthetiques(nb_echantillons: int = 5000) -> pd.DataFrame:
     """
-    Génère un jeu de données synthétique plus intelligent et nuancé.
+    Génère un jeu de données synthétique compatible avec le nouveau format si besoin.
+    Note: On utilise principalement le dataset réel maintenant.
     """
-    np.random.seed(42)
-    nb_phishing = nb_echantillons // 2
-    nb_legitime = nb_echantillons - nb_phishing
-
+    # ... (On garde une version simplifiée pour le fallback)
     donnees = []
-
-    # --- Générer des échantillons LÉGITIMES ---
-    for _ in range(nb_legitime):
-        url_len = np.random.randint(15, 60)
-        # 10% de chance d'échec WHOIS même sur du légitime
-        whois_suc = np.random.choice([0, 1], p=[0.1, 0.9])
-        dom_age = np.random.randint(365, 7300) if whois_suc else -1
-        
-        echantillon = {
-            "url_length": url_len,
-            "has_https": np.random.choice([0, 1], p=[0.05, 0.95]),
-            "has_ip_address": 0,
-            "subdomain_count": np.random.choice([0, 1, 2], p=[0.6, 0.3, 0.1]),
-            "special_char_count": np.random.choice([0, 1, 2], p=[0.8, 0.15, 0.05]),
-            "domain_age_days": dom_age,
-            "whois_success": whois_suc,
-            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.95, 0.05]),
-            "redirect_count": np.random.choice([0, 1], p=[0.9, 0.1]),
-            "has_favicon_mismatch": 0,
-            "html_form_count": np.random.choice([0, 1, 2], p=[0.5, 0.4, 0.1]),
-            "external_links_ratio": round(np.random.uniform(0.0, 0.2), 4),
-            "has_password_input": np.random.choice([0, 1], p=[0.8, 0.2]),
-            "page_title_suspicious": 0,
-            "url_entropy": round(np.random.uniform(3.0, 4.2), 4),
-            "is_shortened": 0,
-            "digit_count": np.random.randint(0, 5),
-            "is_phishing": 0,
-        }
+    for _ in range(nb_echantillons):
+        is_phishing = np.random.choice([0, 1])
+        echantillon = {nom: np.random.choice([-1, 0, 1]) for nom in NOMS_CARACTERISTIQUES}
+        echantillon["is_phishing"] = is_phishing
         donnees.append(echantillon)
-
-    # --- Générer des échantillons de PHISHING ---
-    for _ in range(nb_phishing):
-        url_len = np.random.randint(40, 180)
-        whois_suc = np.random.choice([0, 1], p=[0.3, 0.7])
-        # Un site de phishing a soit un âge court, soit WHOIS échoue
-        dom_age = np.random.randint(0, 90) if whois_suc else -1
-
-        echantillon = {
-            "url_length": url_len,
-            "has_https": np.random.choice([0, 1], p=[0.4, 0.6]),
-            "has_ip_address": np.random.choice([0, 1], p=[0.7, 0.3]),
-            "subdomain_count": np.random.randint(1, 4),
-            "special_char_count": np.random.randint(1, 5),
-            "domain_age_days": dom_age,
-            "whois_success": whois_suc,
-            "has_suspicious_keywords": np.random.choice([0, 1], p=[0.1, 0.9]),
-            "redirect_count": np.random.randint(1, 4),
-            "has_favicon_mismatch": np.random.choice([0, 1], p=[0.4, 0.6]),
-            "html_form_count": np.random.randint(1, 4),
-            "external_links_ratio": round(np.random.uniform(0.4, 0.9), 4),
-            "has_password_input": np.random.choice([0, 1], p=[0.2, 0.8]),
-            "page_title_suspicious": np.random.choice([0, 1], p=[0.3, 0.7]),
-            "url_entropy": round(np.random.uniform(4.0, 5.5), 4),
-            "is_shortened": np.random.choice([0, 1], p=[0.7, 0.3]),
-            "digit_count": np.random.randint(5, 20),
-            "is_phishing": 1,
-        }
-        donnees.append(echantillon)
-
-    df = pd.DataFrame(donnees)
-    # Mélanger les données
-    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-    return df
+    
+    return pd.DataFrame(donnees)
 
 
 def entrainer_modele():
     """
-    Orchestre la génération de données, l'entraînement et la sauvegarde.
+    Orchestre le chargement, l'entraînement et la sauvegarde.
     """
     print("=" * 60)
-    print("PhishGuard - Entrainement du modele de detection")
+    print("PhishGuard - Entrainement du modele (Dataset Réel)")
     print("=" * 60)
 
-    print("\nGeneration du jeu de données synthetique (5000 echantillons)...")
-    df = generer_donnees_synthetiques(5000)
-    print(f"    5000 echantillons generes")
+    # Tenter de charger le dataset réel
+    df = charger_dataset_arff(CHEMIN_DATASET)
+    
+    if df is None:
+        print("\nGeneration du jeu de données synthetique de secours...")
+        df = generer_donnees_synthetiques(5000)
+    else:
+        print(f"    {len(df)} echantillons charges")
+
     print(f"    - Sites legitimes : {len(df[df['is_phishing'] == 0])}")
     print(f"    - Sites de phishing : {len(df[df['is_phishing'] == 1])}")
 
@@ -142,9 +131,19 @@ def entrainer_modele():
     print(f"    - Entrainement : {len(X_train)} echantillons")
     print(f"    - Test : {len(X_test)} echantillons")
 
-    print("\nEntrainement du modele Random Forest...")
-    modele = RandomForestClassifier(
-        n_estimators=200, max_depth=15, n_jobs=-1, random_state=42
+    from sklearn.ensemble import GradientBoostingClassifier
+    from sklearn.model_selection import cross_val_score
+
+    print("\nCalcul de la performance par validation croisee (5-fold)...")
+    modele_cv = GradientBoostingClassifier(
+        n_estimators=300, learning_rate=0.1, max_depth=5, random_state=42
+    )
+    scores = cross_val_score(modele_cv, X, y, cv=5, n_jobs=-1)
+    print(f"    - Accuracy moyenne (CV): {scores.mean():.4f} (+/- {scores.std() * 2:.4f})")
+
+    print("\nEntrainement du modele final Gradient Boosting...")
+    modele = GradientBoostingClassifier(
+        n_estimators=300, learning_rate=0.1, max_depth=5, random_state=42
     )
     modele.fit(X_train, y_train)
     print("    Entrainement termine")

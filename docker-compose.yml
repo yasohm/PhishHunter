@@ -28,6 +28,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./Training Dataset.arff:/app/Training Dataset.arff:ro
 
   frontend:
     build: ./frontend

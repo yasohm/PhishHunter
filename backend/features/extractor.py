@@ -26,6 +26,25 @@ PLATEFORMES_HEBERGEMENT = [
     "web.app", "vercel.app", "netlify.app", "pages.dev"
 ]
 
+# Plateformes de stockage cloud souvent utilisées pour héberger du phishing
+STOCKAGE_CLOUD = [
+    "contabostorage.com", "s3.amazonaws.com", "s3-", ".amazonaws.com",
+    "storage.googleapis.com", "blob.core.windows.net",
+    "digitaloceanspaces.com", "r2.cloudflarestorage.com",
+    "objectstorage.", "cellar-c2.services.clever-cloud.com",
+    "storage.yandexcloud.net", "obs.otc.t-systems.com",
+    "supabase.co/storage", "firebasestorage.googleapis.com"
+]
+
+# Mots-clés liés au vol de credentials dans les chemins d'URL
+MOTS_CREDENTIAL = [
+    "login", "signin", "sign-in", "verify", "secure", "account",
+    "password", "excel", "onedrive", "sharepoint", "office365",
+    "microsoft", "outlook", "document", "docusign", "wetransfer",
+    "dropbox", "invoice", "payment", "billing", "wallet",
+    "metamask", "blockchain", "recover", "suspend", "confirm"
+]
+
 # Timeout pour les requêtes HTTP (en secondes)
 TIMEOUT_REQUETE = 5
 
@@ -48,6 +67,33 @@ def _est_adresse_ip(domaine: str) -> bool:
         pass
     patron_ip = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
     return bool(patron_ip.match(domaine))
+
+
+def _chemin_suspect(chemin: str) -> bool:
+    """Détecte les patterns suspects dans le chemin de l'URL."""
+    if not chemin or chemin == "/":
+        return False
+    chemin_lower = chemin.lower()
+
+    # Tokens hexadécimaux longs (24+ chars) — courants dans les buckets phishing jetables
+    if re.search(r'[0-9a-f]{24,}', chemin_lower):
+        return True
+
+    # Mots-clés de vol de credentials dans le chemin
+    if any(mot in chemin_lower for mot in MOTS_CREDENTIAL):
+        return True
+
+    # UUID patterns dans le chemin (ex: /be6dfdc1-dc04-432f-81e1-265debc2fa11/)
+    if re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', chemin_lower):
+        return True
+
+    return False
+
+
+def _est_stockage_cloud(domaine: str) -> bool:
+    """Vérifie si le domaine est un service de stockage cloud."""
+    return any(s in domaine for s in STOCKAGE_CLOUD)
+
 
 
 def _recuperer_html(url: str) -> tuple:
@@ -131,13 +177,14 @@ def extraire_caracteristiques(url: str) -> dict:
     # Exemple: paypal.secure-login.wixstudio.com
     sous_domaine = ".".join(parties[:-2]) if len(parties) > 2 else ""
     contient_mots_suspects = any(mot in sous_domaine.lower() for mot in MOTS_SUSPECTS)
+    est_cloud = _est_stockage_cloud(domaine)
 
     # UCI: Dots < 3 -> 1, Dots = 3 -> 0, Dots > 3 -> -1
     dots = len(parties) - 1
     if contient_mots_suspects or dots > 3:
         having_Sub_Domain = -1
-    elif dots == 3:
-        having_Sub_Domain = 0
+    elif dots == 3 or est_cloud:
+        having_Sub_Domain = 0  # Cloud storage = suspect au minimum
     else:
         having_Sub_Domain = 1
 
@@ -235,20 +282,30 @@ def extraire_caracteristiques(url: str) -> dict:
 
     # --- 18. Abnormal_URL ---
     Abnormal_URL = 1
-    # 1. Vérification des plateformes d'hébergement gratuites
-    if any(p in domaine for p in PLATEFORMES_HEBERGEMENT):
-        # Si c'est une plateforme gratuite ET qu'il y a un mot suspect ou un tiret
+    est_cloud = _est_stockage_cloud(domaine)
+    chemin_suspect = _chemin_suspect(url_analyse.path)
+
+    # 1. Stockage cloud + chemin suspect = phishing très probable
+    if est_cloud and chemin_suspect:
+        Abnormal_URL = -1
+    # 2. Stockage cloud seul = suspect
+    elif est_cloud:
+        Abnormal_URL = 0
+    # 3. Chemin suspect seul = suspect
+    elif chemin_suspect:
+        Abnormal_URL = 0
+    # 4. Vérification des plateformes d'hébergement gratuites
+    elif any(p in domaine for p in PLATEFORMES_HEBERGEMENT):
         if contient_mots_suspects or Prefix_Suffix == -1:
             Abnormal_URL = -1
     
-    # 2. Vérification WHOIS vs Domaine
+    # 5. Vérification WHOIS vs Domaine
     if whois_success and Abnormal_URL == 1:
         try:
             import whois
             w = whois.whois(domaine)
             nom_registre = str(w.get('org', '') or w.get('name', '')).lower()
             if nom_registre and nom_registre != "none" and not any(p in domaine for p in nom_registre.split()):
-                # Ce check est complexe, on reste prudent
                 pass 
         except Exception:
             pass

@@ -1,4 +1,4 @@
-# PhishGuard 🛡️ — Détecteur de Phishing IA
+# PhishGuard  — Détecteur de Phishing IA
 
 PhishGuard est une application full-stack moderne qui utilise l'Intelligence Artificielle pour détecter les sites web de phishing en temps réel. L'application analyse 13 caractéristiques clés d'une URL et de son contenu HTML pour évaluer le niveau de risque.
 
@@ -55,4 +55,4 @@ python model/train.py
 - **DevOps** : Docker, Docker Compose.
 
 ---
-Développé avec ❤️ pour la cybersécurité.
+by ohm

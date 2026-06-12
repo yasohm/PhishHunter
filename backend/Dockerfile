@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le dataset ARFF (besoin pour l'entraînement au démarrage)
-COPY ["Training Dataset.arff", "/app/"]
+COPY ["data/Training Dataset.arff", "/app/data/"]
 
 # Copier le code source
 COPY . .

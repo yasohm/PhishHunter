@@ -22,7 +22,7 @@ import joblib
 # Chemin du modèle sauvegardé
 CHEMIN_MODELE = os.path.join(os.path.dirname(__file__), "phishing_model.pkl")
 # Chemin du jeu de données ARFF
-CHEMIN_DATASET = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../Training Dataset.arff"))
+CHEMIN_DATASET = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/Training Dataset.arff"))
 
 # Noms des caractéristiques du dataset ARFF (UCI Phishing Websites)
 NOMS_CARACTERISTIQUES = [
@@ -136,14 +136,14 @@ def entrainer_modele():
 
     print("\nCalcul de la performance par validation croisee (5-fold)...")
     modele_cv = GradientBoostingClassifier(
-        n_estimators=300, learning_rate=0.1, max_depth=5, random_state=42
+        n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42
     )
     scores = cross_val_score(modele_cv, X, y, cv=5, n_jobs=-1)
     print(f"    - Accuracy moyenne (CV): {scores.mean():.4f} (+/- {scores.std() * 2:.4f})")
 
     print("\nEntrainement du modele final Gradient Boosting...")
     modele = GradientBoostingClassifier(
-        n_estimators=300, learning_rate=0.1, max_depth=5, random_state=42
+        n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42
     )
     modele.fit(X_train, y_train)
     print("    Entrainement termine")
@@ -174,11 +174,15 @@ def entrainer_modele():
 
 
 def charger_modele():
-    """Charge le modèle sauvegardé depuis le fichier pkl."""
-    if not os.path.exists(CHEMIN_MODELE):
-        print("Modèle non trouvé. Entraînement en cours...")
-        return entrainer_modele()
-    return joblib.load(CHEMIN_MODELE)
+    """Charge le modèle sauvegardé depuis le fichier pkl. Retraîne si nécessaire."""
+    if os.path.exists(CHEMIN_MODELE):
+        try:
+            return joblib.load(CHEMIN_MODELE)
+        except Exception as e:
+            print(f"Erreur lors du chargement du modèle ({e}). Re-entraînement...")
+    
+    print("Modèle non trouvé ou incompatible. Entraînement en cours...")
+    return entrainer_modele()
 
 
 # Alias anglais pour la compatibilité

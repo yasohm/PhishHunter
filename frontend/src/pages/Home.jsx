@@ -37,6 +37,10 @@ const Home = () => {
     };
 
     const isFeatureSuspicious = (name, value) => {
+        // UCI dataset encoding: -1 = phishing = suspicious
+        if (value === -1) return true;
+
+        // Old extractor features (kept for backwards compatibility)
         if (name === 'has_https' && value === 0) return true;
         if (name === 'has_ip_address' && value === 1) return true;
         if (name === 'has_suspicious_keywords' && value === 1) return true;
@@ -50,6 +54,7 @@ const Home = () => {
         if (name === 'redirect_count' && value > 1) return true;
         if (name === 'url_entropy' && value > 4.5) return true;
         if (name === 'digit_count' && value > 10) return true;
+
         return false;
     };
 
@@ -110,14 +115,15 @@ const Home = () => {
                         <RiskGauge confidence={result.confidence} riskLevel={result.risk_level} />
 
                         <div className="grid grid-cols-2 gap-3">
-                            {Object.entries(result.features).slice(0, 14).map(([key, value]) => (
-                                <FeatureCard
-                                    key={key}
-                                    name={key}
-                                    value={value}
-                                    isSuspicious={isFeatureSuspicious(key, value)}
-                                />
-                            ))}
+                            {Object.entries(result.features)
+                                .filter(([key]) => !key.endsWith('_UCI'))
+                                .map(([key, value]) => (
+                                    <FeatureCard
+                                        key={key}
+                                        name={key}
+                                        value={value}
+                                    />
+                                ))}
                         </div>
                     </div>
 

@@ -12,6 +12,11 @@ export const analyzeUrl = async (url) => {
     return response.data;
 };
 
+export const analyzeEmail = async (sujet, corps, expediteur = "") => {
+    const response = await client.post('/analyze-email', { sujet, corps, expediteur });
+    return response.data;
+};
+
 export const getHistory = async (page = 1, limit = 20, riskLevel = null) => {
     const params = { page, limit };
     if (riskLevel) params.risk_level = riskLevel;

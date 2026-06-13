@@ -13,11 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier le dataset ARFF (besoin pour l'entraînement au démarrage)
-COPY ["data/Training Dataset.arff", "/app/data/"]
+# Copier les datasets (besoin pour l'entraînement au démarrage)
+COPY ["data/Training Dataset.arff", "data/emails.csv", "/app/data/"]
 
 # Copier le code source
 COPY . .
+
+# Entraîner les modèles au build
+RUN python -c "from model.train import entrainer_modele; from model.train_email import entrainer_modele_email; entrainer_modele(); entrainer_modele_email()"
 
 # Exposer le port
 EXPOSE 8000

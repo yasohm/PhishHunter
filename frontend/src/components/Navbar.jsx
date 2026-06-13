@@ -25,6 +25,12 @@ const Navbar = () => {
                     >
                         Historique
                     </Link>
+                    <Link
+                        to="/email"
+                        className={`transition-colors hover:text-blue-200 ${location.pathname === '/email' ? 'font-semibold border-b-2 border-blue-400' : 'text-slate-300'}`}
+                    >
+                        Analyse Email
+                    </Link>
                 </div>
             </div>
         </nav>

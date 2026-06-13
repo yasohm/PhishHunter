@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import History from './pages/History'
+import EmailAnalysis from './pages/EmailAnalysis'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/history" element={<History />} />
+            <Route path="/email" element={<EmailAnalysis />} />
           </Routes>
         </main>
         <footer className="py-8 text-center text-slate-400 text-sm border-t border-slate-100">

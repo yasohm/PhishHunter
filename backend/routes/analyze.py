@@ -15,7 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.db import get_db
 from database.models import Scan
 from features.extractor import extraire_caracteristiques
+from features.email_extractor import extraire_caracteristiques_email
 from model.predict import predict
+from model.train_email import charger_modele_email, FEATURES_EMAIL
 
 # Créer le routeur API
 router = APIRouter(prefix="/api", tags=["Analyse"])
@@ -66,6 +68,42 @@ class AnalyseResponse(BaseModel):
     created_at: str
 
 
+class EmailRequest(BaseModel):
+    """Schéma de requête pour l'analyse d'un email."""
+    sujet: str
+    corps: str
+    expediteur: str = ""
+
+    @field_validator("sujet", "corps")
+    @classmethod
+    def valider_non_vide(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Le champ ne peut pas être vide")
+        return v
+
+
+class UrlAnalyseSimple(BaseModel):
+    """Analyse simplifiée d'une URL pour l'inclusion dans l'email."""
+    url: str
+    is_phishing: bool
+    confidence: float
+    risk_level: str
+
+
+class EmailAnalyseResponse(BaseModel):
+    """Schéma de réponse pour l'analyse d'un email."""
+    sujet: str
+    expediteur: str
+    is_phishing: bool
+    confidence: float
+    risk_level: str
+    features: dict
+    urls_extraites: list
+    url_analyses: list[UrlAnalyseSimple]
+    scan_id: int
+    created_at: str
+
+
 class StatsResponse(BaseModel):
     """Schéma de réponse pour les statistiques."""
     total_scans: int
@@ -73,8 +111,6 @@ class StatsResponse(BaseModel):
     safe_count: int
     avg_confidence: float
 
-
-# --- Routes ---
 
 @router.post("/analyze", response_model=AnalyseResponse)
 async def analyser_url(
@@ -131,6 +167,118 @@ async def analyser_url(
 
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la sauvegarde : {str(e)}"
+        )
+
+
+@router.post("/analyze-email", response_model=EmailAnalyseResponse)
+async def analyser_email(
+    requete: EmailRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Analyse un email pour détecter le phishing.
+    """
+    try:
+        # Étape 1 : Extraire les caractéristiques de l'email
+        resultat_extraction = extraire_caracteristiques_email(
+            requete.sujet, requete.corps, requete.expediteur
+        )
+        caracteristiques = resultat_extraction["features"]
+        model_features = resultat_extraction["model_features"]
+        urls_extraites = resultat_extraction["urls_extraites"]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de l'extraction des caractéristiques : {str(e)}"
+        )
+
+    try:
+        # Étape 2 : Prédiction avec le modèle email (Bag of Words)
+        modele_email = charger_modele_email()
+        X_email = [model_features.get(f, 0) for f in FEATURES_EMAIL]
+        prob_email = modele_email.predict_proba([X_email])[0][1]
+        confidence_email = round(float(prob_email * 100), 2)
+        is_phishing_email = bool(modele_email.predict([X_email])[0])
+
+        # Étape 3 : Analyse approfondie de chaque URL trouvée
+        url_analyses = []
+        max_url_confidence = 0.0
+        
+        for url in urls_extraites:
+            try:
+                # Utiliser le pipeline d'analyse d'URL existant
+                feats_url = extraire_caracteristiques(url)
+                res_url = predict(feats_url)
+                
+                analysis = UrlAnalyseSimple(
+                    url=url,
+                    is_phishing=res_url["is_phishing"],
+                    confidence=res_url["confidence"],
+                    risk_level=res_url["risk_level"]
+                )
+                url_analyses.append(analysis)
+                
+                if res_url["confidence"] > max_url_confidence:
+                    max_url_confidence = res_url["confidence"]
+            except Exception:
+                # Si une URL échoue (ex: format invalide), on continue
+                continue
+
+        # Étape 4 : Verdict combiné
+        # Le verdict final est le maximum entre le score de l'email et le score de l'URL la plus dangereuse
+        final_confidence = max(confidence_email, max_url_confidence)
+        final_is_phishing = is_phishing_email or any(a.is_phishing for a in url_analyses)
+
+        # Déterminer le niveau de risque final
+        if final_confidence < 40:
+            final_risk_level = "safe"
+        elif final_confidence <= 70:
+            final_risk_level = "suspicious"
+        else:
+            final_risk_level = "dangerous"
+
+        resultat = {
+            "is_phishing": final_is_phishing,
+            "confidence": final_confidence,
+            "risk_level": final_risk_level
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la prédiction combinée : {str(e)}"
+        )
+
+    try:
+        # Étape 5 : Sauvegarder en base de données
+        scan = Scan(
+            url=f"EMAIL:{requete.sujet[:100]}",
+            is_phishing=resultat["is_phishing"],
+            confidence=resultat["confidence"],
+            risk_level=resultat["risk_level"],
+            features_json=json.dumps(caracteristiques),
+            created_at=datetime.utcnow(),
+        )
+        db.add(scan)
+        await db.flush()
+        await db.refresh(scan)
+
+        return EmailAnalyseResponse(
+            sujet=requete.sujet,
+            expediteur=requete.expediteur,
+            is_phishing=scan.is_phishing,
+            confidence=scan.confidence,
+            risk_level=scan.risk_level,
+            features=caracteristiques,
+            urls_extraites=urls_extraites,
+            url_analyses=url_analyses,
+            scan_id=scan.id,
+            created_at=scan.created_at.isoformat(),
+        )
+
     except Exception as e:
         raise HTTPException(
             status_code=500,

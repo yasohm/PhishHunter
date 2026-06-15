@@ -83,9 +83,9 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 function updateIcon(tabId, riskLevel) {
   const MAP = {
-    safe:       { icon: 'icons/icon-safe-48.png',       title: 'PhishGuard — Sûre ✓' },
-    suspicious: { icon: 'icons/icon-suspicious-48.png', title: 'PhishGuard — Suspecte ⚠️' },
-    dangerous:  { icon: 'icons/icon-dangerous-48.png',  title: 'PhishGuard — PHISHING 🚨' },
+    safe:       { icon: 'icons/icon-safe-48.png',       title: 'PhishGuard — Sure' },
+    suspicious: { icon: 'icons/icon-suspicious-48.png', title: 'PhishGuard — Suspecte' },
+    dangerous:  { icon: 'icons/icon-dangerous-48.png',  title: 'PhishGuard — PHISHING DETECTE' },
     unknown:    { icon: 'icons/icon-48.png',             title: 'PhishGuard' },
   };
   const { icon, title } = MAP[riskLevel] ?? MAP.unknown;

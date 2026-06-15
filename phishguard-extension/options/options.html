@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PhishGuard — Paramètres</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <img src="../icons/icon-48.png" width="32" height="32" alt="">
+      <div>
+        <h1>PhishGuard</h1>
+        <p>Paramètres de l'extension</p>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- Enable/disable -->
+      <section class="card">
+        <div class="card-title">Extension</div>
+        <label class="toggle-row">
+          <div>
+            <strong>Activer PhishGuard</strong>
+            <p>Analyse les URLs en temps réel lors de votre navigation.</p>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="enabled">
+            <span class="slider"></span>
+          </label>
+        </label>
+      </section>
+
+      <!-- Backend -->
+      <section class="card">
+        <div class="card-title">Connexion au backend</div>
+        <div class="field">
+          <label for="api-url">URL du serveur PhishGuard</label>
+          <input type="url" id="api-url" placeholder="http://localhost:8000">
+          <small>Modifiez si vous hébergez le backend sur un serveur distant.</small>
+        </div>
+        <button id="btn-test" class="btn-secondary">Tester la connexion</button>
+        <span id="test-status"></span>
+      </section>
+
+      <!-- Warning sensitivity -->
+      <section class="card">
+        <div class="card-title">Niveau d'alerte</div>
+        <p class="card-desc">À partir de quel niveau de risque afficher la bannière d'avertissement ?</p>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="sensitivity" value="suspicious">
+            <div>
+              <strong>Suspecte ou Dangereuse</strong>
+              <p>Avertissement pour tout site dont le score dépasse 40 %.</p>
+            </div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="sensitivity" value="dangerous">
+            <div>
+              <strong>Dangereuse uniquement</strong>
+              <p>Avertissement uniquement pour les sites clairement identifiés comme phishing (> 70 %).</p>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <!-- Cache -->
+      <section class="card">
+        <div class="card-title">Cache des résultats</div>
+        <div class="field">
+          <label for="cache-minutes">Durée du cache (minutes)</label>
+          <div class="range-row">
+            <input type="range" id="cache-minutes" min="5" max="120" step="5">
+            <span id="cache-value">30 min</span>
+          </div>
+          <small>Les URLs déjà analysées ne rappellent pas l'API pendant cette durée.</small>
+        </div>
+        <div class="cache-stats">
+          Entrées en cache : <strong id="cache-count">—</strong>
+          <button id="btn-clear-cache" class="btn-link">Vider le cache</button>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <button id="btn-save" class="btn-primary">Enregistrer</button>
+      <span id="save-status"></span>
+    </footer>
+
+  </div>
+  <script src="options.js" type="module"></script>
+</body>
+</html>

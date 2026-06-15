@@ -1,7 +1,6 @@
 import React from 'react';
 
 const FeatureCard = ({ name, value }) => {
-    // 1. Format common discrete values (UCI encoding)
     const isUciFeature = !(['url_length', 'URL_Length', 'nb_urls', 'body_length', 'nb_mots_urgence',
         'special_chars_subject', 'subject_entropy', 'ratio_urls_suspectes',
         'digit_count', 'url_entropy', 'subdomain_count', 'special_char_count',
@@ -9,27 +8,32 @@ const FeatureCard = ({ name, value }) => {
         'domain_age_days'].includes(name));
 
     const getUciDisplay = (val) => {
-        if (val === 1) return { text: 'Légitime', styles: 'bg-green-50 border-green-200 text-green-900', dot: 'bg-green-500' };
-        if (val === 0) return { text: 'Neutre', styles: 'bg-amber-50 border-amber-200 text-amber-900', dot: 'bg-amber-500' };
-        if (val === -1) return { text: 'Phishing', styles: 'bg-red-50 border-red-200 text-red-900', dot: 'bg-red-500' };
+        if (val === 1) return {
+            text: 'Légitime',
+            styles: 'bg-green-50 border-green-200 text-green-900 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300',
+            dot: 'bg-green-500'
+        };
+        if (val === 0) return {
+            text: 'Neutre',
+            styles: 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
+            dot: 'bg-amber-500'
+        };
+        if (val === -1) return {
+            text: 'Phishing',
+            styles: 'bg-red-50 border-red-200 text-red-900 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300',
+            dot: 'bg-red-500'
+        };
         return null;
     };
 
     const uciData = isUciFeature ? getUciDisplay(value) : null;
 
-    // 2. Format name
-    const formatName = (str) => {
-        return str
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, (l) => l.toUpperCase());
-    };
+    const formatName = (str) => str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    // 3. Determine if suspicious (for red cards)
-    const isSuspiciousValue = value === -1;
-
-    // 4. Final styling
-    const cardStyles = uciData ? uciData.styles : 'bg-slate-50 border-slate-200 text-slate-900';
-    const dotStyles = uciData ? uciData.dot : 'bg-slate-400';
+    const cardStyles = uciData
+        ? uciData.styles
+        : 'bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100';
+    const dotStyles  = uciData ? uciData.dot : 'bg-slate-400';
     const displayText = uciData ? uciData.text : value;
 
     return (
@@ -38,9 +42,7 @@ const FeatureCard = ({ name, value }) => {
                 {formatName(name)}
             </span>
             <div className="flex justify-between items-end">
-                <span className="text-lg font-bold truncate pr-1">
-                    {displayText}
-                </span>
+                <span className="text-lg font-bold truncate pr-1">{displayText}</span>
                 <div className={`w-3 h-3 rounded-full ${dotStyles}`}></div>
             </div>
         </div>

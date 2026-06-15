@@ -56,9 +56,16 @@ origines_autorisees = [
     "http://localhost:3000",
 ]
 
+# Allow browser extensions (Chrome + Firefox)
+origines_regex = [
+    r"chrome-extension://.*",
+    r"moz-extension://.*",
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origines_autorisees,
+    allow_origin_regex="|".join(origines_regex),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

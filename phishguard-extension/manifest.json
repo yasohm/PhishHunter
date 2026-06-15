@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "PhishGuard",
+  "version": "1.0.0",
+  "description": "Détection de phishing en temps réel — propulsé par l'IA",
+  "permissions": ["tabs", "storage", "activeTab"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://localhost:8000/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "PhishGuard"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

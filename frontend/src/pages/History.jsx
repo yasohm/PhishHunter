@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getHistory } from '../api/client';
+import { exportJSON, exportPDF } from '../utils/export';
 
 const History = () => {
     const [history, setHistory] = useState([]);
@@ -93,6 +94,7 @@ const History = () => {
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Verdict</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Confiance</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Date</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Export</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -103,33 +105,55 @@ const History = () => {
                                     <td className="px-6 py-6"><div className="h-6 bg-slate-100 rounded-full w-20 mx-auto"></div></td>
                                     <td className="px-6 py-6"><div className="h-4 bg-slate-100 rounded w-12 mx-auto"></div></td>
                                     <td className="px-6 py-6"><div className="h-4 bg-slate-100 rounded w-24 ml-auto"></div></td>
+                                    <td className="px-6 py-6"><div className="h-4 bg-slate-100 rounded w-16 mx-auto"></div></td>
                                 </tr>
                             ))
                         ) : history.length === 0 ? (
                             <tr>
-                                <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                                <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                                     Aucune analyse trouvée pour ce filtre.
                                 </td>
                             </tr>
                         ) : (
-                            history.map((scan) => (
-                                <tr key={scan.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-slate-900 truncate max-w-sm">
-                                        {scan.url}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getBadgeClass(scan.risk_level)}`}>
-                                            {translateLevel(scan.risk_level)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center font-bold text-slate-700">
-                                        {scan.confidence}%
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-slate-500 text-sm">
-                                        {new Date(scan.created_at).toLocaleDateString('fr-FR')}
-                                    </td>
-                                </tr>
-                            ))
+                            history.map((scan) => {
+                                const isEmail = scan.url.startsWith('EMAIL:');
+                                return (
+                                    <tr key={scan.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-slate-900 truncate max-w-sm">
+                                            {scan.url}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getBadgeClass(scan.risk_level)}`}>
+                                                {translateLevel(scan.risk_level)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center font-bold text-slate-700">
+                                            {scan.confidence}%
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-slate-500 text-sm">
+                                            {new Date(scan.created_at).toLocaleDateString('fr-FR')}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                    title="Exporter JSON"
+                                                    onClick={() => exportJSON(scan, isEmail ? 'email' : 'url')}
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                </button>
+                                                <button
+                                                    title="Exporter PDF"
+                                                    onClick={() => exportPDF(scan, isEmail ? 'email' : 'url')}
+                                                    className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition-all"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>

@@ -14,16 +14,16 @@ const Navbar = () => {
                 </Link>
                 <div className="flex gap-6">
                     <Link
-                        to="/"
-                        className={`transition-colors hover:text-blue-200 ${location.pathname === '/' ? 'font-semibold border-b-2 border-blue-400' : 'text-slate-300'}`}
-                    >
-                        Accueil
-                    </Link>
-                    <Link
                         to="/history"
                         className={`transition-colors hover:text-blue-200 ${location.pathname === '/history' ? 'font-semibold border-b-2 border-blue-400' : 'text-slate-300'}`}
                     >
                         Historique
+                    </Link>
+                    <Link
+                        to="/"
+                        className={`transition-colors hover:text-blue-200 ${location.pathname === '/' ? 'font-semibold border-b-2 border-blue-400' : 'text-slate-300'}`}
+                    >
+                        Accueil
                     </Link>
                     <Link
                         to="/email"

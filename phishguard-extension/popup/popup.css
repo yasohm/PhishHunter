@@ -24,7 +24,8 @@ header {
 #btn-options {
   background: rgba(255,255,255,.12);
   border: none; color: #fff; cursor: pointer;
-  font-size: 16px; padding: 4px 7px; border-radius: 5px;
+  padding: 5px 7px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
 }
 #btn-options:hover { background: rgba(255,255,255,.22); }
 
@@ -49,7 +50,7 @@ header {
 }
 .state p   { font-weight: 600; font-size: 13px; }
 .state small { font-size: 11px; opacity: .75; }
-.state-icon { font-size: 26px; }
+.state-icon { display: flex; align-items: center; justify-content: center; color: #94a3b8; }
 
 .hidden { display: none !important; }
 

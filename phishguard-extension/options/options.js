@@ -33,7 +33,7 @@ async function saveSettings() {
   await chrome.storage.local.set(settings);
 
   const status = document.getElementById('save-status');
-  status.textContent = '✓ Paramètres enregistrés';
+  status.textContent = 'Paramètres enregistrés';
   setTimeout(() => { status.textContent = ''; }, 2500);
 }
 
@@ -45,7 +45,7 @@ async function testConnection() {
   try {
     const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
     if (res.ok) {
-      statusEl.textContent = '✓ Connecté';
+      statusEl.textContent = 'Connecté';
       statusEl.className = 'ok';
     } else {
       throw new Error(`HTTP ${res.status}`);

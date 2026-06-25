@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BANNER_ID = 'phishguard-warning-banner';
+  const BANNER_ID = 'phishhunter-warning-banner';
 
   async function getSensitivity() {
     return new Promise(resolve => {
@@ -73,7 +73,7 @@
 
   // Listen for messages pushed by service worker
   chrome.runtime.onMessage.addListener(({ type, result }) => {
-    if (type === 'PHISHGUARD_RESULT') showBanner(result);
+    if (type === 'PHISHHUNTER_RESULT') showBanner(result);
   });
 
 })();

@@ -21,7 +21,7 @@ function App() {
           </Routes>
         </main>
         <footer className="py-8 text-center text-slate-400 dark:text-slate-600 text-sm border-t border-slate-100 dark:border-slate-800">
-          PhishGuard — Analyseur de Phishing IA © 2026
+          PhishHunter — Analyseur de Phishing IA © 2026
         </footer>
       </div>
     </Router>

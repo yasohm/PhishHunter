@@ -50,7 +50,7 @@ const History = () => {
             <div className="flex justify-between items-end mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-navy-900 dark:text-slate-100 mb-2">Historique des Analyses</h1>
-                    <p className="text-slate-600 dark:text-slate-400">Retrouvez tous les sites précédemment analysés par PhishGuard.</p>
+                    <p className="text-slate-600 dark:text-slate-400">Retrouvez tous les sites précédemment analysés par PhishHunter.</p>
                 </div>
                 <div className="flex gap-2">
                     {[

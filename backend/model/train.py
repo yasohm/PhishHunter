@@ -105,7 +105,7 @@ def entrainer_modele():
     Orchestre le chargement, l'entraînement et la sauvegarde.
     """
     print("=" * 60)
-    print("PhishGuard - Entrainement du modele (Dataset Réel)")
+    print("PhishHunter - Entrainement du modele (Dataset Réel)")
     print("=" * 60)
 
     # Tenter de charger le dataset réel

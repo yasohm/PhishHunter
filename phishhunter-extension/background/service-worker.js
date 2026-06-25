@@ -44,11 +44,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     updateIcon(tabId, result.risk_level);
 
     // Notify content script — may fail if page not ready yet (that's OK)
-    chrome.tabs.sendMessage(tabId, { type: 'PHISHGUARD_RESULT', result })
+    chrome.tabs.sendMessage(tabId, { type: 'PHISHHUNTER_RESULT', result })
       .catch(() => {});
 
   } catch (err) {
-    console.warn('[PhishGuard] Analysis failed:', err.message);
+    console.warn('[PhishHunter] Analysis failed:', err.message);
     updateIcon(tabId, 'unknown');
   }
 });
@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await saveToCache(msg.url, result);
         await chrome.storage.session.set({ [`tab_${msg.tabId}`]: { result, url: msg.url } });
         updateIcon(msg.tabId, result.risk_level);
-        chrome.tabs.sendMessage(msg.tabId, { type: 'PHISHGUARD_RESULT', result }).catch(() => {});
+        chrome.tabs.sendMessage(msg.tabId, { type: 'PHISHHUNTER_RESULT', result }).catch(() => {});
         sendResponse({ ok: true, result });
       })
       .catch(err => sendResponse({ ok: false, error: err.message }));
@@ -83,10 +83,10 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 function updateIcon(tabId, riskLevel) {
   const MAP = {
-    safe:       { icon: 'icons/icon-safe-48.png',       title: 'PhishGuard — Sure' },
-    suspicious: { icon: 'icons/icon-suspicious-48.png', title: 'PhishGuard — Suspecte' },
-    dangerous:  { icon: 'icons/icon-dangerous-48.png',  title: 'PhishGuard — PHISHING DETECTE' },
-    unknown:    { icon: 'icons/icon-48.png',             title: 'PhishGuard' },
+    safe:       { icon: 'icons/icon-safe-48.png',       title: 'PhishHunter — Sure' },
+    suspicious: { icon: 'icons/icon-suspicious-48.png', title: 'PhishHunter — Suspecte' },
+    dangerous:  { icon: 'icons/icon-dangerous-48.png',  title: 'PhishHunter — PHISHING DETECTE' },
+    unknown:    { icon: 'icons/icon-48.png',             title: 'PhishHunter' },
   };
   const { icon, title } = MAP[riskLevel] ?? MAP.unknown;
   chrome.action.setIcon({ tabId, path: icon });

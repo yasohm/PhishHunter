@@ -1,5 +1,5 @@
 """
-PhishGuard — Point d'entrée principal de l'application FastAPI.
+PhishHunter — Point d'entrée principal de l'application FastAPI.
 Serveur de détection de phishing basé sur le Machine Learning.
 """
 
@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 async def lifespan(app: FastAPI):
     """Gestion du cycle de vie de l'application."""
     # Démarrage : créer les tables si elles n'existent pas
-    print("PhishGuard - Demarrage du serveur...")
+    print("PhishHunter - Demarrage du serveur...")
     try:
         await creer_tables()
         print("Tables de base de données créées/vérifiées")
@@ -37,12 +37,12 @@ async def lifespan(app: FastAPI):
 
     # Arrêt : fermer la connexion à la base de données
     await fermer_connexion()
-    print("PhishGuard - Serveur arrete")
+    print("PhishHunter - Serveur arrete")
 
 
 # Créer l'application FastAPI
 app = FastAPI(
-    title="PhishGuard API",
+    title="PhishHunter API",
     description="API de détection de sites de phishing basée sur le Machine Learning",
     version="1.0.0",
     lifespan=lifespan,
@@ -79,7 +79,7 @@ app.include_router(analyse_router)
 async def racine():
     """Point d'entrée racine — Informations sur l'API."""
     return {
-        "nom": "PhishGuard API",
+        "nom": "PhishHunter API",
         "version": "1.0.0",
         "description": "API de détection de sites de phishing",
         "endpoints": {
@@ -93,4 +93,4 @@ async def racine():
 @app.get("/health")
 async def sante():
     """Vérification de l'état de santé du serveur."""
-    return {"status": "ok", "service": "PhishGuard API"}
+    return {"status": "ok", "service": "PhishHunter API"}

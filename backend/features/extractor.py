@@ -103,7 +103,7 @@ def _recuperer_html(url: str) -> tuple:
             url,
             timeout=TIMEOUT_REQUETE,
             allow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PhishGuard/1.0"},
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PhishHunter/1.0"},
             verify=False
         )
         return reponse.text, reponse

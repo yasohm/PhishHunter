@@ -26,7 +26,7 @@ PhishHunter est une application full-stack moderne qui utilise l'Intelligence Ar
 
 ### 1. Cloner le dépôt
 ```bash
-git clone <url-du-depot>
+git clone https://github.com/yasohm/PhishHunter.git
 cd phishhunter
 ```
 

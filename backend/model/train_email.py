@@ -29,7 +29,7 @@ def entrainer_modele_email():
     """
     Entraîne le modèle Random Forest pour les emails en utilisant emails.csv.
     """
-    print("Entraînement du modèle email PhishGuard avec le dataset CSV...")
+    print("Entraînement du modèle email PhishHunter avec le dataset CSV...")
     df = charger_dataset()
     
     # Extraire les noms de features (toutes les colonnes sauf index et label)

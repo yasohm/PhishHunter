@@ -21,7 +21,7 @@ const Navbar = ({ dark, onToggleDark }) => {
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
                 <Link to="/" className="flex items-center space-x-2">
                     <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                        PhishGuard
+                        PhishHunter
                     </span>
                 </Link>
 

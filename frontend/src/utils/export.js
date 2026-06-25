@@ -68,9 +68,9 @@ function isSuspect(value) {
     return value === -1 || value === 1;
 }
 
-export function exportJSON(data, filename = 'rapport-phishguard') {
+export function exportJSON(data, filename = 'rapport-phishhunter') {
     const report = {
-        generator: 'PhishGuard',
+        generator: 'PhishHunter',
         version: '1.0.0',
         generated_at: new Date().toISOString(),
         ...data,
@@ -79,7 +79,7 @@ export function exportJSON(data, filename = 'rapport-phishguard') {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `phishguard-${filename}-${data.scan_id || Date.now()}.json`;
+    a.download = `phishhunter-${filename}-${data.scan_id || Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -95,7 +95,7 @@ export function exportPDF(data, type = 'url') {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text('PhishGuard', m, 14);
+    doc.text('PhishHunter', m, 14);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.text('Rapport de Sécurité — Détection de Phishing', m, 23);
@@ -259,7 +259,7 @@ export function exportPDF(data, type = 'url') {
         doc.setFontSize(7);
         doc.setTextColor(148, 163, 184);
         doc.text(
-            `PhishGuard — Rapport généré automatiquement — Page ${i}/${total}`,
+            `PhishHunter — Rapport généré automatiquement — Page ${i}/${total}`,
             pageW / 2,
             doc.internal.pageSize.getHeight() - 8,
             { align: 'center' }
@@ -267,5 +267,5 @@ export function exportPDF(data, type = 'url') {
     }
 
     const prefix = type === 'email' ? 'email' : 'url';
-    doc.save(`phishguard-${prefix}-#${data.scan_id || Date.now()}.pdf`);
+    doc.save(`phishhunter-${prefix}-#${data.scan_id || Date.now()}.pdf`);
 }

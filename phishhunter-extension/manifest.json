@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PhishGuard",
+  "name": "PhishHunter",
   "version": "1.0.0",
   "description": "Détection de phishing en temps réel — propulsé par l'IA",
   "permissions": ["tabs", "storage", "activeTab"],
@@ -28,7 +28,7 @@
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
     },
-    "default_title": "PhishGuard"
+    "default_title": "PhishHunter"
   },
   "options_ui": {
     "page": "options/options.html",

@@ -1,9 +1,9 @@
 services:
   postgres:
     image: postgres:15
-    container_name: phishguard-db
+    container_name: phishhunter-db
     environment:
-      POSTGRES_DB: phishguard
+      POSTGRES_DB: phishhunter
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
     volumes:
@@ -11,16 +11,16 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin -d phishguard" ]
+      test: [ "CMD-SHELL", "pg_isready -U admin -d phishhunter" ]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
     build: ./backend
-    container_name: phishguard-api
+    container_name: phishhunter-api
     environment:
-      - DATABASE_URL=postgresql+asyncpg://admin:admin123@postgres:5432/phishguard
+      - DATABASE_URL=postgresql+asyncpg://admin:admin123@postgres:5432/phishhunter
     ports:
       - "8000:8000"
     depends_on:
@@ -32,7 +32,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: phishguard-web
+    container_name: phishhunter-web
     ports:
       - "5173:5173"
     depends_on:

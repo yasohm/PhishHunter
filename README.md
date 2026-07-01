@@ -36,6 +36,8 @@ docker-compose up --build
 ```
 Cela démarrera la base de données, le backend et le frontend.
 
+> **Note sécurité** : les identifiants PostgreSQL par défaut (`admin` / `changeme`) sont fournis uniquement pour le développement local. En production, définissez un mot de passe fort via la variable d'environnement `DATABASE_URL` (ou `POSTGRES_PASSWORD` dans `docker-compose.yml`) plutôt que d'utiliser les valeurs par défaut.
+
 ### 3. Entraîner le modèle (Optionnel si non utilisé avec Docker)
 Si vous lancez le projet localement sans Docker :
 ```bash
